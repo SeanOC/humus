@@ -21,6 +21,8 @@ class CoreTests(TestCase):
         config.add_section('AWS')
         config.set('AWS', 'access_key', test_config['AWS']['access_key'])
         config.set('AWS', 'secret_key', test_config['AWS']['secret_key'])
+        config.set('AWS', 'bucket', test_config['AWS']['bucket'])
+        config.set('AWS', 'path', 'test')
 
         # Make sure that the files directory exists
         if not os.path.exists(cls.test_files_dir):
@@ -74,12 +76,12 @@ class CoreTests(TestCase):
         syncer = self.get_syncer()
         test_file_path = os.path.join(self.test_files_dir, 'text_file.txt')
         with open(test_file_path) as test_file:
-            syncer.sync(test_file, test_config['AWS']['bucket'], 'text_file.txt')
+            syncer.sync(test_file, 'text_file.txt')
             test_file.seek(0)
             expected = bz2.compress(test_file.read())
 
         bucket = self.get_bucket()
-        key = bucket.get_key('text_file.txt.bz2')
+        key = bucket.get_key('test/text_file.txt.bz2')
         result = key.get_contents_as_string()
 
         self.assertEquals(expected, result)

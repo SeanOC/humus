@@ -28,6 +28,9 @@ class Syncer(object):
         self.chunk_size = 1024
         super(Syncer, self).__init__()
 
+    def get_bucket(self):
+        return self.conn.create_bucket(self.config.get('AWS', 'bucket'))
+
     def load_config(self):
         config = ConfigParser.SafeConfigParser()
         config.read([os.path.abspath(path) for path in self.config_paths])
@@ -47,12 +50,12 @@ class Syncer(object):
 
         return tmp_file_path
 
-    def sync(self, source, target_bucket, target_name, target_path=''):
+    def sync(self, source, target_name):
         compressed_path = self.compress_data(source)
         target_name += '.bz2'
-        bucket = self.conn.create_bucket(target_bucket)
+        bucket = self.get_bucket()
         key = Key(bucket)
-        key.key = os.path.join(target_path, target_name)
+        key.key = os.path.join(self.config.get('AWS','path', ''), target_name)
         key.set_contents_from_filename(compressed_path)
         key.set_acl('private')
 
@@ -61,6 +64,9 @@ class Syncer(object):
             os.removedirs(directory)
 
         self.to_cleanup = []
+
+    def rotate(self):
+        keys = 1
 
 
 
