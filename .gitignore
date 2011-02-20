@@ -1,3 +1,4 @@
+dist
 Humus.egg-info
 .coverage
 tests/config.ini
