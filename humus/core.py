@@ -38,9 +38,20 @@ class Syncer(object):
         self.to_cleanup = [self.working_dir]
         self.path = self.config.get('AWS', 'path', '')
         if self.config.has_section('humus'):
-            self.chunk_size = self.config.getint('humus', 'chunk_size', 1024)
-            self.count_limit = self.config.getint('humus', 'count_limit', None)
-            self.age_limit = self.config.getint('humus', 'age_limit', None)
+            if self.config.has_option('humus', 'chunk_size'):
+                self.chunk_size = self.config.getint('humus', 'chunk_size')
+            else:
+                self.chunk_size = 1024
+            if self.config.has_option('humus', 'count_limit'):
+                self.count_limit = self.config.getint('humus', 'count_limit')
+            else:
+                self.count_limit = None
+
+            if self.config.has_option('humus', 'age_limit'):
+                self.age_limit = self.config.getint('humus', 'age_limit')
+            else:
+                self.age_limit = None
+
         else:
             self.chunk_size = 1024
             self.count_limit = None
@@ -85,15 +96,22 @@ class Syncer(object):
 
     def trim(self):
         bucket = self.get_bucket()
-        keys = bucket.list(prefix=self.path)
-
+        keys = list(bucket.list(prefix=self.path))
+        for key in keys:
+            key.open_read()
+        keys.sort(key=lambda key: key.get_metadata('created'), reverse=True)
+        skipped = 0
         for n, key in enumerate(keys, start=1):
-
-            if self.count_limit and self.count_limit > n:
+            # Sometimes amazon returns "directories" as keys
+            # We need to skip over those.
+            if key.key.endswith('/'):
+                skipped += 1
+                continue
+            real_n = n - skipped
+            if self.count_limit and self.count_limit < real_n:
                 key.delete()
 
             if self.age_limit:
-                key.open_read()
                 now = self.now()
                 created_str = key.get_metadata('created')
                 if created_str:
@@ -101,6 +119,7 @@ class Syncer(object):
                     age = now - created
                     if self.age_limit <= age.days:
                         key.delete()
+                        print "DELETING %s for being over the age limit of %s" % (key, self.age_limit)
 
     def cleanup(self):
         for directory in self.to_cleanup:

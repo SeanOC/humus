@@ -154,4 +154,4 @@ class CoreTests(TestCase):
 
         result = len(keys)
         self.assertEquals(expected, result,
-        "Too many keys returned.  Created dates for returned keys:  %s" % [key.open_read(); key.get_metadata('created') for key in keys])
+        "Too many keys returned.  Created dates for returned keys:  %s" % [key.get_metadata('created') for key in keys])
