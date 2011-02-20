@@ -1,3 +1,4 @@
+import ConfigParser
 import os
 
 from humus.exceptions import ConfigError
@@ -11,22 +12,14 @@ class Syncer(object):
         '/etc/humus/humus.ini',
     ]
 
-    def __init__(self):
+    def __init__(self, config_paths=None):
+        if config_paths is not None:
+            self.config_paths = config_paths
         super(Syncer, self).__init__()
 
-    def get_config_path(self):
-        '''
-        Find the config file for humus.
-        '''
-        found_path = None
 
-        for path in self.config_paths:
-            full_path = os.path.abspath(path)
-            if os.path.exists(full_path):
-                found_path = full_path
-                break
+    def load_config(self):
+        config = ConfigParser.SafeConfigParser()
+        config.read([os.path.abspath(path) for path in self.config_paths])
 
-        if found_path is None:
-            raise ConfigError('No configuration file could be found (tried %s).' % u', '.join(self.config_paths))
-
-        return full_path
+        return config
