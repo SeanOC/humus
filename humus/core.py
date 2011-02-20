@@ -3,6 +3,7 @@ import ConfigParser
 from datetime import datetime
 import logging
 import os
+import shutil
 import tempfile
 
 from boto.s3.connection import S3Connection
@@ -123,7 +124,7 @@ class Syncer(object):
 
     def cleanup(self):
         for directory in self.to_cleanup:
-            os.removedirs(directory)
+            shutil.rmtree(directory)
 
         self.to_cleanup = []
 

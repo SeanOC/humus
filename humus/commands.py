@@ -20,3 +20,4 @@ def humus_sync():
     syncer = Syncer()
     syncer.sync(source=source, target_name=target_name)
     syncer.trim()
+    syncer.cleanup()
