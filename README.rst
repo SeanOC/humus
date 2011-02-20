@@ -18,7 +18,7 @@ Installation & Use
 ==================
 
 1. Run ``pip install humus``.
-2. Create a config file like the following at ``./humus.ini``, ``~/humus.ini``, ``/etc/humus.ini``, or ``/etc/humus/humus.ini``:::
+2. Create a config file like the following at ``./humus.ini``, ``~/humus.ini``, ``/etc/humus.ini``, or ``/etc/humus/humus.ini``::
 
     [AWS]
     access_key=< YOUR AWS ACCESS KEY >
