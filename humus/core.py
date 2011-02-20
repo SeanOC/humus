@@ -85,8 +85,20 @@ class Syncer(object):
     def sync(self, source, target_name):
         compressed_path = self.compress_data(source)
         now = self.now()
-        now_str = now.strftime('%Y-%m-%dT%H:%M:%S.000Z')
-        target_name += '.%s.bz2' % now_str
+        now_str = now.strftime('%Y-%m-%dT%H:%M:%S')
+        name_parts = target_name.split('.')
+        if len(name_parts) > 1:
+            new_name = name_parts[:-1]
+            new_name.append(now_str)
+            new_name.append(name_parts[-1])
+            new_name.append('bz2')
+        else:
+            new_name = name_parts
+            new_name.append(now_str)
+            new_name.append('bz2')
+
+
+        target_name = u'.'.join(new_name)
         bucket = self.get_bucket()
         key = Key(bucket)
         key.key = os.path.join(self.path, target_name)
@@ -116,7 +128,7 @@ class Syncer(object):
                 now = self.now()
                 created_str = key.get_metadata('created')
                 if created_str:
-                    created = datetime.strptime(created_str, '%Y-%m-%dT%H:%M:%S.000Z')
+                    created = datetime.strptime(created_str, '%Y-%m-%dT%H:%M:%S')
                     age = now - created
                     if self.age_limit <= age.days:
                         key.delete()
