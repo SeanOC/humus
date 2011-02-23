@@ -51,4 +51,4 @@ To restore a backup, simply download the saved file from S3 using your client of
 
 If you used the encryption options above, you can decrypt your backup using the following command::
 
-    gpg -c --no-use-agent --batch --yes --passphrase < YOUR REALLY LONG ENCRYPTION PASSPHRASE > --cipher-algo AES256 -o my_file.bz2 my_encrypted_file.bz2
+    gpg -d --no-use-agent --batch --yes --passphrase < YOUR REALLY LONG ENCRYPTION PASSPHRASE > --cipher-algo AES256 -o my_file.bz2 my_encrypted_file.bz2
