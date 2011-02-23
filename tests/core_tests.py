@@ -1,10 +1,13 @@
+import bz2
 import ConfigParser
 from copy import copy
 from datetime import datetime, timedelta
 import os
+import subprocess
+from tempfile import mkdtemp
 import time
 from unittest import TestCase
-import bz2
+
 
 from boto.s3.connection import S3Connection
 from mock import patch
@@ -26,6 +29,11 @@ class CoreTests(TestCase):
         config.set('AWS', 'secret_key', test_config['AWS']['secret_key'])
         config.set('AWS', 'bucket', test_config['AWS']['bucket'])
         config.set('AWS', 'path', 'test')
+        config.add_section('encryption')
+        config.set('encryption', 'gpg_binary', 'gpg')
+        config.set('encryption', 'encrypt_command', '%(gpg_command)s -c --no-use-agent --batch --yes --passphrase %(passphrase)s --cipher-algo AES256 -o %(output_file)s %(input_file)s')
+        config.set('encryption', 'passphrase', 'test')
+
 
         # Make sure that the files directory exists
         if not os.path.exists(cls.test_files_dir):
@@ -76,19 +84,44 @@ class CoreTests(TestCase):
             self.assertFalse(os.path.exists(directory))
 
     def test_sync(self):
+        tmp_dir = mkdtemp()
         syncer = self.get_syncer()
         test_file_path = os.path.join(self.test_files_dir, 'text_file.txt')
         with open(test_file_path) as test_file:
             syncer.sync(test_file, 'text_file.txt')
             test_file.seek(0)
-            expected = bz2.compress(test_file.read())
+            compressed = bz2.compress(test_file.read())
+            compressed_path = os.path.join(tmp_dir, 'text_file.txt.bz2')
+            with open(compressed_path, 'wb') as compressed_file:
+                compressed_file.write(compressed)
+
+            encrypted_path = os.path.join(tmp_dir, 'encrypted_file.bz2')
+            encrypt_command = 'gpg -c --no-use-agent --batch --yes --passphrase test --cipher-algo AES256 -o %s %s' % (encrypted_path, compressed_path)
+            encrypt_command = encrypt_command.split()
+            encrypt_proc = subprocess.Popen(encrypt_command)
+            exit_code = encrypt_proc.wait()
+            with open(encrypted_path, 'rb') as encrypted_file:
+                encrypted = encrypted_file.read()
+            self.assertEquals(0, exit_code)
 
         bucket = self.get_bucket()
         keys = list(bucket.list())
         key = keys[0]
-        result = key.get_contents_as_string()
+        encrypted_result_path = os.path.join(tmp_dir, 'encrypted_result')
+        decrypted_result_path = os.path.join(tmp_dir, 'text_file.txt.bz2')
+        with open(encrypted_result_path, 'wb') as encrypted_result_file:
+            encrypted_result = key.get_contents_to_file(encrypted_result_file)
 
-        self.assertEquals(expected, result)
+        decrypt_command = 'gpg -d --no-use-agent --batch --yes --passphrase test --cipher-algo AES256 -o %s %s' % (decrypted_result_path, encrypted_result_path)
+        decrypt_command = decrypt_command.split()
+        decrypt_proc = subprocess.Popen(decrypt_command)
+        exit_code = decrypt_proc.wait()
+        with open(decrypted_result_path, 'rb') as decrypted_file:
+            decrypted_result = decrypted_file.read()
+        self.assertEquals(0, exit_code)
+
+
+        self.assertEquals(compressed, decrypted_result)
 
     def build_file_history(self, syncer, count, utcnow_mock):
         test_file_path = os.path.join(self.test_files_dir, 'text_file.txt')

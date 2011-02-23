@@ -4,6 +4,7 @@ from datetime import datetime
 import logging
 import os
 import shutil
+import subprocess
 import tempfile
 
 from boto.s3.connection import S3Connection
@@ -52,11 +53,19 @@ class Syncer(object):
                 self.age_limit = self.config.getint('humus', 'age_limit')
             else:
                 self.age_limit = None
-
         else:
             self.chunk_size = 1024
             self.count_limit = None
             self.age_limit = None
+
+        if self.config.has_section('encryption'):
+            self.gpg_binary = self.config.get('encryption', 'gpg_binary')
+            self.encrypt_command = self.config.get('encryption', 'encrypt_command', raw=True)
+            self.passphrase = self.config.get('encryption', 'passphrase')
+        else:
+            self.gpg_binary = None
+            self.encrypt_command = None
+            self.passphrase = None
 
         super(Syncer, self).__init__()
 
@@ -69,8 +78,8 @@ class Syncer(object):
 
         return config
 
-    def compress_data(self, source):
-        tmp_file_path = os.path.join(self.working_dir, 'compessed_file.bz2')
+    def compress_data(self, source, target_name):
+        tmp_file_path = os.path.join(self.working_dir, '%s.bz2' % target_name)
         target = BZ2File(tmp_file_path, mode='w')
 
         chunk = source.read(self.chunk_size)
@@ -82,8 +91,30 @@ class Syncer(object):
 
         return tmp_file_path
 
+    def encrypt_file(self, path):
+        tmp_file_path = os.path.join(self.working_dir, 'encrypted_file.bz2')
+        full_encrypt_cmd = self.encrypt_command.split()
+        args = {
+            'gpg_command': self.gpg_binary,
+            'output_file': tmp_file_path,
+            'input_file': path,
+            'passphrase': self.passphrase,
+        }
+        full_encrypt_cmd = [item % args for item in full_encrypt_cmd]
+        gpg_proc = subprocess.Popen(full_encrypt_cmd)
+        exit_code = gpg_proc.wait()
+        if exit_code != 0:
+            raise Exception("Exit code for '%s' was %d" % (full_encrypt_cmd, exit_code))
+
+        return tmp_file_path
+
+
     def sync(self, source, target_name):
-        compressed_path = self.compress_data(source)
+        upload_path = self.compress_data(source, target_name)
+        if self.gpg_binary and self.encrypt_command:
+            upload_path = self.encrypt_file(upload_path)
+
+        print upload_path
         now = self.now()
         now_str = now.strftime('%Y-%m-%dT%H:%M:%S')
         name_parts = target_name.split('.')
@@ -104,7 +135,7 @@ class Syncer(object):
         key.key = os.path.join(self.path, target_name)
         logger.info('Uploading to %s' % key.key)
         key.set_metadata('created', now_str)
-        key.set_contents_from_filename(compressed_path)
+        key.set_contents_from_filename(upload_path)
         key.set_acl('private')
 
     def trim(self):

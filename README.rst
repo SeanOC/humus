@@ -26,7 +26,7 @@ Installation & Use
     bucket=some-bucket-name
 
     # Everything after this point is optional
-    path=bacups
+    path=backups
 
     [humus]
     # The number of files to exist in the S3 directory before getting trimmed
@@ -35,5 +35,10 @@ Installation & Use
     age_limit=2
     # The chunk size in bytes for data to be passed to bz2
     chunk_size=1024
+
+    [encryption]
+    gpg_binary=gpg
+    encrypt_command=%(gpg_command)s -c --no-use-agent --batch --yes --passphrase %(passphrase)s --cipher-algo AES256 -o %(output_file)s %(input_file)s
+    passphrase=< YOUR REALLY LONG ENCRYPTION PASSPHRASE >
 
 3. Run the command ``humus my_filename target_file`` or ``output_cmd | humus my_filename`` whenever you want to make a new backup.
