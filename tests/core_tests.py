@@ -31,7 +31,7 @@ class CoreTests(TestCase):
         config.set('AWS', 'path', 'test')
         config.add_section('encryption')
         config.set('encryption', 'gpg_binary', 'gpg')
-        config.set('encryption', 'encrypt_command', '%(gpg_command)s -c --no-use-agent --batch --yes --passphrase %(passphrase)s --cipher-algo AES256 -o %(output_file)s %(input_file)s')
+        config.set('encryption', 'encrypt_command', '%(gpg_command)s -c -q --no-use-agent --batch --yes --passphrase %(passphrase)s --cipher-algo AES256 -o %(output_file)s %(input_file)s')
         config.set('encryption', 'passphrase', 'test')
 
 
@@ -96,7 +96,7 @@ class CoreTests(TestCase):
                 compressed_file.write(compressed)
 
             encrypted_path = os.path.join(tmp_dir, 'encrypted_file.bz2')
-            encrypt_command = 'gpg -c --no-use-agent --batch --yes --passphrase test --cipher-algo AES256 -o %s %s' % (encrypted_path, compressed_path)
+            encrypt_command = 'gpg -c -q --no-use-agent --batch --yes --passphrase test --cipher-algo AES256 -o %s %s' % (encrypted_path, compressed_path)
             encrypt_command = encrypt_command.split()
             encrypt_proc = subprocess.Popen(encrypt_command)
             exit_code = encrypt_proc.wait()
@@ -112,7 +112,7 @@ class CoreTests(TestCase):
         with open(encrypted_result_path, 'wb') as encrypted_result_file:
             encrypted_result = key.get_contents_to_file(encrypted_result_file)
 
-        decrypt_command = 'gpg -d --no-use-agent --batch --yes --passphrase test --cipher-algo AES256 -o %s %s' % (decrypted_result_path, encrypted_result_path)
+        decrypt_command = 'gpg -d -q --no-use-agent --batch --yes --passphrase test --cipher-algo AES256 -o %s %s' % (decrypted_result_path, encrypted_result_path)
         decrypt_command = decrypt_command.split()
         decrypt_proc = subprocess.Popen(decrypt_command)
         exit_code = decrypt_proc.wait()
