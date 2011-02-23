@@ -63,7 +63,8 @@ class CoreTests(TestCase):
         return bucket
 
     def get_syncer(self):
-        syncer = Syncer(config_paths=[self.test_humus_config,])
+        print self.test_humus_config
+        syncer = Syncer(config_path=self.test_humus_config)
         return syncer
 
     def test_init(self):

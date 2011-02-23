@@ -31,7 +31,7 @@ class Syncer(object):
 
     def __init__(self, config_path=None):
         if config_path is not None:
-            self.config_paths = config_path
+            self.config_paths = [config_path,]
 
         self.config = self.load_config()
         self.conn = S3Connection(self.config.get('AWS', 'access_key'), self.config.get('AWS', 'secret_key'))
@@ -53,10 +53,16 @@ class Syncer(object):
                 self.age_limit = self.config.getint('humus', 'age_limit')
             else:
                 self.age_limit = None
+
+            if self.config.has_option('humus', 'compress'):
+                self.compress = self.config.getboolean('humus', 'compress')
+            else:
+                self.compress = True
         else:
             self.chunk_size = 1024
             self.count_limit = None
             self.age_limit = None
+            self.compress = True
 
         if self.config.has_section('encryption'):
             self.gpg_binary = self.config.get('encryption', 'gpg_binary')
@@ -79,15 +85,23 @@ class Syncer(object):
         return config
 
     def compress_data(self, source, target_name):
-        tmp_file_path = os.path.join(self.working_dir, '%s.bz2' % target_name)
-        target = BZ2File(tmp_file_path, mode='w')
+        if self.compress:
+            tmp_file_path = os.path.join(self.working_dir, '%s.bz2' % target_name)
+            target = BZ2File(tmp_file_path, mode='w')
 
-        chunk = source.read(self.chunk_size)
-        while chunk != '':
-            target.write(chunk)
             chunk = source.read(self.chunk_size)
+            while chunk != '':
+                target.write(chunk)
+                chunk = source.read(self.chunk_size)
 
-        target.close()
+            target.close()
+        else:
+            tmp_file_path = os.path.join(self.working_dir, target_name)
+            with open(tmp_file_path, 'wb') as target:
+                chunk = source.read(self.chunk_size)
+                while chunk != '':
+                    target.write(chunk)
+                    chunk = source.read(self.chunk_size)
 
         return tmp_file_path
 
