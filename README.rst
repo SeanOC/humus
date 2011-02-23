@@ -36,9 +36,19 @@ Installation & Use
     # The chunk size in bytes for data to be passed to bz2
     chunk_size=1024
 
+    # Leave out this section if you want your backup to be unencrypted.
     [encryption]
     gpg_binary=gpg
     encrypt_command=%(gpg_command)s -c --no-use-agent --batch --yes --passphrase %(passphrase)s --cipher-algo AES256 -o %(output_file)s %(input_file)s
     passphrase=< YOUR REALLY LONG ENCRYPTION PASSPHRASE >
 
 3. Run the command ``humus my_filename target_file`` or ``output_cmd | humus my_filename`` whenever you want to make a new backup.
+
+Restoring Backups
+=================
+
+To restore a backup, simply download the saved file from S3 using your client of choice.
+
+If you used the encryption options above, you can decrypt your backup using the following command::
+
+    gpg -c --no-use-agent --batch --yes --passphrase < YOUR REALLY LONG ENCRYPTION PASSPHRASE > --cipher-algo AES256 -o my_file.bz2 my_encrypted_file.bz2
