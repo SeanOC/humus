@@ -5,6 +5,9 @@ from humus.core import Syncer
 
 def humus_sync():
     parser = OptionParser()
+    parser.add_option('-c', '--config', dest='config', action="store", type="string", default=None,
+        help='The path to the configuation file humus should use.')
+
     (options, args) = parser.parse_args()
 
     if len(args) == 2:
@@ -17,7 +20,7 @@ def humus_sync():
         print "You must provide a target name for the file to be uploaded."
         exit(1)
 
-    syncer = Syncer()
+    syncer = Syncer(config_path=options.config)
     syncer.sync(source=source, target_name=target_name)
     syncer.trim()
     syncer.cleanup()

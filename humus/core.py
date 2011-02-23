@@ -29,9 +29,9 @@ class Syncer(object):
         '''
         return datetime.utcnow()
 
-    def __init__(self, config_paths=None):
-        if config_paths is not None:
-            self.config_paths = config_paths
+    def __init__(self, config_path=None):
+        if config_path is not None:
+            self.config_paths = config_path
 
         self.config = self.load_config()
         self.conn = S3Connection(self.config.get('AWS', 'access_key'), self.config.get('AWS', 'secret_key'))
