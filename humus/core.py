@@ -136,11 +136,13 @@ class Syncer(object):
             new_name = name_parts[:-1]
             new_name.append(now_str)
             new_name.append(name_parts[-1])
-            new_name.append('bz2')
+            if self.compress:
+                new_name.append('bz2')
         else:
             new_name = name_parts
             new_name.append(now_str)
-            new_name.append('bz2')
+            if self.compress:
+                new_name.append('bz2')
 
 
         target_name = u'.'.join(new_name)

@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='Humus',
-    version='0.4.0',
+    version='0.4.2',
     packages=find_packages(),
     entry_points = {
         'console_scripts': [
